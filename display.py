@@ -121,73 +121,73 @@ class Video:
 
 
 
+if __name__ == "__main__":
 
-
-DOLL_VIDEO_PATH='C:\\Users\\sujal\\Downloads\\Untitled video - Made with Clipchamp (1).mp4'
-IMAGE_FOLDER_PATH="C:\\Users\\sujal\\Desktop\\NITK\\RedLight_GreenLight\\images"
-cam = cv2.VideoCapture(0)
-vid_obj=Video(DOLL_VIDEO_PATH,IMAGE_FOLDER_PATH,cam)
-
-# keypoints=np.load("C:\\Users\\sujal\\Desktop\\NITK\\RedLight_GreenLight\\testing\\d_video.npy",allow_pickle=True)
-per_keypoints=np.array([[     462.82,      834.28,     0.94828],
-       [     458.88,      835.75,     0.92352],
-       [     458.27,      831.67,     0.90224],
-       [     458.33,      834.18,     0.81058],
-       [     455.66,      821.08,        0.89],
-       [     477.73,      818.68,     0.95413],
-       [      479.1,      837.37,     0.94124],
-       [     476.44,      800.54,     0.93741],
-       [     510.04,      842.17,      0.9098],
-       [     499.46,       781.8,     0.86429],
-       [     537.27,      846.97,     0.89841],
-       [     512.78,      773.41,     0.54808],
-       [     539.43,      828.61,     0.85455],
-       [     539.03,      807.71,     0.88112],
-       [     539.52,      818.33,     0.90238],
-       [     584.81,       827.9,     0.87716],
-       [     579.78,      812.18,     0.91905],
-       [     630.71,       822.3,     0.88984],
-       [     611.75,      802.68,     0.86489],
-       [     638.42,      828.67,     0.87141],
-       [     636.16,      831.58,      0.9184],
-       [     635.47,      819.23,     0.89662],
-       [     630.58,      802.91,     0.98351],
-       [     628.63,       797.3,     0.86932],
-       [     614.01,      801.87,     0.70369]], dtype=np.float32)
-per_keypoints=per_keypoints/2
-per_keypoints_2=per_keypoints+10
-per_keypoints_3=per_keypoints+30
-per_keypoints_4=per_keypoints+50
-per_keypoints_5=per_keypoints+100
-
-keypoints={0:per_keypoints,1:per_keypoints_2,2:per_keypoints_3,3:per_keypoints_4,4:per_keypoints_5}
-
-i=0
-
-while 500:
-    t=time.time()
-    vid_obj.display_doll()
-    vid_obj.hightlight_on_webcam(keypoints)
-    vid_obj.show_player_status()
-    # vid_obj.show_player_status([0,0,0,0,0])
-    cv2.imshow('Frame',cv2.resize(vid_obj.display_frame,(1080,720)))
-    if cv2.waitKey(1)==ord('q'):
-        break
-    if(i==80):
-        vid_obj.mode='r'
-    if(i==100):
-        vid_obj.player_status[2]=0
-        vid_obj.mode='g'
-    if(i==180):
-        vid_obj.mode='r'
-    if(i==200):
-        vid_obj.player_status[1]=0
-        vid_obj.mode='g'
-    if(i==380):
-        vid_obj.mode='r'
-    if(i==400):
-        vid_obj.player_status[0]=0
-        vid_obj.mode='g'
+    DOLL_VIDEO_PATH='C:\\Users\\sujal\\Downloads\\Untitled video - Made with Clipchamp (1).mp4'
+    IMAGE_FOLDER_PATH="C:\\Users\\sujal\\Desktop\\NITK\\RedLight_GreenLight\\images"
+    cam = cv2.VideoCapture(0)
+    vid_obj=Video(DOLL_VIDEO_PATH,IMAGE_FOLDER_PATH,cam)
     
-    print(time.time()-t)
-    i+=1
+    # keypoints=np.load("C:\\Users\\sujal\\Desktop\\NITK\\RedLight_GreenLight\\testing\\d_video.npy",allow_pickle=True)
+    per_keypoints=np.array([[     462.82,      834.28,     0.94828],
+           [     458.88,      835.75,     0.92352],
+           [     458.27,      831.67,     0.90224],
+           [     458.33,      834.18,     0.81058],
+           [     455.66,      821.08,        0.89],
+           [     477.73,      818.68,     0.95413],
+           [      479.1,      837.37,     0.94124],
+           [     476.44,      800.54,     0.93741],
+           [     510.04,      842.17,      0.9098],
+           [     499.46,       781.8,     0.86429],
+           [     537.27,      846.97,     0.89841],
+           [     512.78,      773.41,     0.54808],
+           [     539.43,      828.61,     0.85455],
+           [     539.03,      807.71,     0.88112],
+           [     539.52,      818.33,     0.90238],
+           [     584.81,       827.9,     0.87716],
+           [     579.78,      812.18,     0.91905],
+           [     630.71,       822.3,     0.88984],
+           [     611.75,      802.68,     0.86489],
+           [     638.42,      828.67,     0.87141],
+           [     636.16,      831.58,      0.9184],
+           [     635.47,      819.23,     0.89662],
+           [     630.58,      802.91,     0.98351],
+           [     628.63,       797.3,     0.86932],
+           [     614.01,      801.87,     0.70369]], dtype=np.float32)
+    per_keypoints=per_keypoints/2
+    per_keypoints_2=per_keypoints+10
+    per_keypoints_3=per_keypoints+30
+    per_keypoints_4=per_keypoints+50
+    per_keypoints_5=per_keypoints+100
+    
+    keypoints={0:per_keypoints,1:per_keypoints_2,2:per_keypoints_3,3:per_keypoints_4,4:per_keypoints_5}
+    
+    i=0
+    
+    while 500:
+        t=time.time()
+        vid_obj.display_doll()
+        vid_obj.hightlight_on_webcam(keypoints)
+        vid_obj.show_player_status()
+        # vid_obj.show_player_status([0,0,0,0,0])
+        cv2.imshow('Frame',cv2.resize(vid_obj.display_frame,(1080,720)))
+        if cv2.waitKey(1)==ord('q'):
+            break
+        if(i==80):
+            vid_obj.mode='r'
+        if(i==100):
+            vid_obj.player_status[2]=0
+            vid_obj.mode='g'
+        if(i==180):
+            vid_obj.mode='r'
+        if(i==200):
+            vid_obj.player_status[1]=0
+            vid_obj.mode='g'
+        if(i==380):
+            vid_obj.mode='r'
+        if(i==400):
+            vid_obj.player_status[0]=0
+            vid_obj.mode='g'
+        
+        print(time.time()-t)
+        i+=1
