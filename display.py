@@ -1,30 +1,107 @@
 import cv2
 import numpy as np
 import time
+import threading
 
+class People:
+    def __init__(self):
+        self.past_keypoints_cam1 = []
+        self.curr_keypoints_cam1 = []
+        self.past_keypoints_cam2 = []
+        self.curr_keypoints_cam2 = []
+        self.l = [1,1,1,1,1]
+        self.flag = 1                                #Flag if people are more than 5
+        self.er = 0.003
+        self.begin = True
 
+    def change_keypoints(self,keypoints1,keypoints2):
+        if(not self.begin):
+           self.past_keypoints_cam1 = self.curr_keypoints_cam1
+           self.curr_keypoints_cam1 = keypoints1
+           self.past_keypoints_cam2 = self.curr_keypoints_cam2
+           self.curr_keypoints_cam2 = keypoints2
+        else:
+            self.curr_keypoints_cam1 = keypoints1
+            self.curr_keypoints_cam2 = keypoints2
+            self.past_keypoints_cam1 = keypoints1
+            self.past_keypoints_cam2 = keypoints2
+            self.begin=False
+
+        keyps1 = list(self.curr_keypoints_cam1.keys())
+        keyps2 = list(self.curr_keypoints_cam2.keys())
+    
+        if(min(len(self.curr_keypoints_cam1),len(self.curr_keypoints_cam2)) > 5):
+            assert(0),"Greater than 5 players detected"
+            self.flag=0
+        
+        self.curr_keypoints_cam2[keyps2[0]], self.curr_keypoints_cam2[keyps2[4]] = self.curr_keypoints_cam2[keyps2[4]], self.curr_keypoints_cam2[keyps2[0]]
+        self.curr_keypoints_cam2[keyps2[1]], self.curr_keypoints_cam2[keyps2[3]] = self.curr_keypoints_cam2[keyps2[3]], self.curr_keypoints_cam2[keyps2[1]]
+    
+        # self.past_keypoints_cam2[keyps2[0]], self.past_keypoints_cam2[keyps2[4]] = self.past_keypoints_cam2[keyps2[4]], self.past_keypoints_cam2[keyps2[0]]
+        # self.past_keypoints_cam2[keyps2[1]], self.past_keypoints_cam2[keyps2[3]] = self.past_keypoints_cam2[keyps2[3]], self.past_keypoints_cam2[keyps2[1]]    
+
+    def error_fn(self):
+        error =[]
+        if len(self.curr_keypoints_cam1)<len(self.curr_keypoints_cam2):
+            dict_of_key=self.curr_keypoints_cam1
+        else:
+            dict_of_key=self.curr_keypoints_cam2
+        for j,key in enumerate(dict_of_key): #Iterating through all the players
+            past_arr1 = np.array(self.past_keypoints_cam1[key])
+            curr_arr1 = np.array(self.curr_keypoints_cam1[key])
+
+            past_arr2 = np.array(self.past_keypoints_cam2[key])
+            curr_arr2 = np.array(self.curr_keypoints_cam2[key])
+            
+            x_prev1 = past_arr1[:,0]
+            y_prev1 = past_arr1[:,1]
+            x_curr1 = curr_arr1[:,0]
+            y_curr1 = curr_arr1[:,1]
+            conf_curr1 = curr_arr1[:,3]
+
+            x_prev2 = past_arr2[:,0]
+            y_prev2 = past_arr2[:,1]
+            x_curr2 = curr_arr2[:,0]
+            y_curr2 = curr_arr2[:,1]
+            conf_curr2 = curr_arr2[:,3]
+
+            if(np.mean(conf_curr1)>np.mean(conf_curr2)):    
+                p_prev = np.concatenate((x_prev1,y_prev1))
+                p_curr = np.concatenate((x_curr1,y_curr1))
+            else:
+                p_prev = np.concatenate((x_prev2,y_prev2))
+                p_curr = np.concatenate((x_curr2,y_curr2))
+            
+            p1 = np.sum(p_prev - np.mean(p_prev))/np.std(p_prev)
+            p2 = np.sum(p_curr - np.mean(p_curr))/np.std(p_curr)
+
+            error.append(np.mean(np.square(np.subtract(p1,p2))))
+            print(j," : ",error[j])
+            if(error[j]>self.er):
+                self.l[j]=0
 
 class Video:
-    def __init__(self,doll_video_path,image_folder_path,webcam):
+    def __init__(self,doll_video_path,image_folder_path):
         self.display_frame=np.zeros((1080,1920,3),dtype=np.uint8)
-        self.mode='g' 
+        self.frame_f=np.zeros((480,640,3),dtype=np.uint8)
+        self.frame_b=np.zeros((480,640,3),dtype=np.uint8)
+        self.mode='g';
         self.prev_mode=self.mode
         self.count_frames_of_doll=0
         self.list_of_frames_backward=[]
         self.list_of_frames_forward=[]
         self.DOLL_VIDEO_PATH=doll_video_path
         self.IMAGE_FOLDER_PATH=image_folder_path
-        self.webcam_object=webcam
         self.player_status=[1,1,1,1,1] #1 indicates all players are alive
-        self.alive1=cv2.imread(IMAGE_FOLDER_PATH+'\\alive'+str(1)+'.png')
-        self.alive2=cv2.imread(IMAGE_FOLDER_PATH+'\\alive'+str(2)+'.png')
-        self.alive3=cv2.imread(IMAGE_FOLDER_PATH+'\\alive'+str(3)+'.png')
-        self.alive4=cv2.imread(IMAGE_FOLDER_PATH+'\\alive'+str(4)+'.png')
-        self.alive5=cv2.imread(IMAGE_FOLDER_PATH+'\\alive'+str(5)+'.png')
+        self.alive1=cv2.imread(self.IMAGE_FOLDER_PATH+'\\alive'+str(1)+'.png')
+        self.alive2=cv2.imread(self.IMAGE_FOLDER_PATH+'\\alive'+str(2)+'.png')
+        self.alive3=cv2.imread(self.IMAGE_FOLDER_PATH+'\\alive'+str(3)+'.png')
+        self.alive4=cv2.imread(self.IMAGE_FOLDER_PATH+'\\alive'+str(4)+'.png')
+        self.alive5=cv2.imread(self.IMAGE_FOLDER_PATH+'\\alive'+str(5)+'.png')
         self.list_of_photos_alive=[self.alive1,self.alive2,self.alive3,self.alive4,self.alive5]
-        self.dead1=cv2.imread(IMAGE_FOLDER_PATH+'\\DEAD'+str(1)+'.png')
-        self.dead2=cv2.imread(IMAGE_FOLDER_PATH+'\\DEAD'+str(2)+'.png')
-        self.dead3=cv2.imread(IMAGE_FOLDER_PATH+'\\DEAD'+str(3)+'.png')
+        self.dead1=cv2.imread(self.IMAGE_FOLDER_PATH+'\\DEAD'+str(1)+'.png')
+        self.dead2=cv2.imread(self.IMAGE_FOLDER_PATH+'\\DEAD'+str(2)+'.png')
+        self.dead3=cv2.imread(self.IMAGE_FOLDER_PATH+'\\DEAD'+str(3)+'.png')
         self.list_of_photos_dead=[self.dead1,self.dead2,self.dead3]
 
         #creating list of frames of doll video
@@ -53,8 +130,8 @@ class Video:
             display_list=self.list_of_frames_forward
         
         self.display_frame[360:,1280:,:]=display_list[self.count_frames_of_doll]
-        if not self.count_frames_of_doll == (len(display_list)-5):
-            self.count_frames_of_doll+=10
+        if self.count_frames_of_doll <= (len(display_list)-41):         
+            self.count_frames_of_doll+=40
 
         return
     
@@ -74,7 +151,7 @@ class Video:
             right+=384
 
     def hightlight_on_webcam(self,keypoints):
-        _,image=self.webcam_object.read()
+        image=self.frame_b
 
         ALPHA=0.8 #level of transparency
 
@@ -118,52 +195,73 @@ class Video:
             image=image+mask_2
 
         self.display_frame[360:,:1280,:]=cv2.resize(image,(1280,720))
+    
+    def change_front_frame(self,frame):
+        self.frame_f=frame
+
+    def change_back_frame(self,frame):
+        self.frame_b=frame
 
 
 
-if __name__ == "__main__":
+
+if __name__=="__main__":
 
     DOLL_VIDEO_PATH='C:\\Users\\sujal\\Downloads\\Untitled video - Made with Clipchamp (1).mp4'
     IMAGE_FOLDER_PATH="C:\\Users\\sujal\\Desktop\\NITK\\RedLight_GreenLight\\images"
     cam = cv2.VideoCapture(0)
     vid_obj=Video(DOLL_VIDEO_PATH,IMAGE_FOLDER_PATH,cam)
-    
+    # people_obj=people()
+
     # keypoints=np.load("C:\\Users\\sujal\\Desktop\\NITK\\RedLight_GreenLight\\testing\\d_video.npy",allow_pickle=True)
     per_keypoints=np.array([[     462.82,      834.28,     0.94828],
-           [     458.88,      835.75,     0.92352],
-           [     458.27,      831.67,     0.90224],
-           [     458.33,      834.18,     0.81058],
-           [     455.66,      821.08,        0.89],
-           [     477.73,      818.68,     0.95413],
-           [      479.1,      837.37,     0.94124],
-           [     476.44,      800.54,     0.93741],
-           [     510.04,      842.17,      0.9098],
-           [     499.46,       781.8,     0.86429],
-           [     537.27,      846.97,     0.89841],
-           [     512.78,      773.41,     0.54808],
-           [     539.43,      828.61,     0.85455],
-           [     539.03,      807.71,     0.88112],
-           [     539.52,      818.33,     0.90238],
-           [     584.81,       827.9,     0.87716],
-           [     579.78,      812.18,     0.91905],
-           [     630.71,       822.3,     0.88984],
-           [     611.75,      802.68,     0.86489],
-           [     638.42,      828.67,     0.87141],
-           [     636.16,      831.58,      0.9184],
-           [     635.47,      819.23,     0.89662],
-           [     630.58,      802.91,     0.98351],
-           [     628.63,       797.3,     0.86932],
-           [     614.01,      801.87,     0.70369]], dtype=np.float32)
+        [     458.88,      835.75,     0.92352],
+        [     458.27,      831.67,     0.90224],
+        [     458.33,      834.18,     0.81058],
+        [     455.66,      821.08,        0.89],
+        [     477.73,      818.68,     0.95413],
+        [      479.1,      837.37,     0.94124],
+        [     476.44,      800.54,     0.93741],
+        [     510.04,      842.17,      0.9098],
+        [     499.46,       781.8,     0.86429],
+        [     537.27,      846.97,     0.89841],
+        [     512.78,      773.41,     0.54808],
+        [     539.43,      828.61,     0.85455],
+        [     539.03,      807.71,     0.88112],
+        [     539.52,      818.33,     0.90238],
+        [     584.81,       827.9,     0.87716],
+        [     579.78,      812.18,     0.91905],
+        [     630.71,       822.3,     0.88984],
+        [     611.75,      802.68,     0.86489],
+        [     638.42,      828.67,     0.87141],
+        [     636.16,      831.58,      0.9184],
+        [     635.47,      819.23,     0.89662],
+        [     630.58,      802.91,     0.98351],
+        [     628.63,       797.3,     0.86932],
+        [     614.01,      801.87,     0.70369]], dtype=np.float32)
     per_keypoints=per_keypoints/2
     per_keypoints_2=per_keypoints+10
     per_keypoints_3=per_keypoints+30
     per_keypoints_4=per_keypoints+50
     per_keypoints_5=per_keypoints+100
-    
+
     keypoints={0:per_keypoints,1:per_keypoints_2,2:per_keypoints_3,3:per_keypoints_4,4:per_keypoints_5}
-    
+
     i=0
-    
+
+    def display_thread(vid_obj,people_obj):
+        while True:
+            vid_obj.display_doll()
+            vid_obj.hightlight_on_webcam(people_obj.curr_keypoints_cam_1)
+            vid_obj.show_player_status()
+            cv2.imshow('Frame',cv2.resize(vid_obj.display_frame,(1080,720)))
+            if cv2.waitKey(1)==ord('q'):
+                break
+
+    # t1=threading.Thread(display_thread,args=(vid_obj,people_obj))
+
+
+
     while 500:
         t=time.time()
         vid_obj.display_doll()
