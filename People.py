@@ -1,75 +1,126 @@
 class People:
-    def __init__(self):
-        self.past_keypoints_cam1 = []
-        self.curr_keypoints_cam1 = []
-        self.past_keypoints_cam2 = []
-        self.curr_keypoints_cam2 = []
-        self.l = [1,1,1,1,1]
-        self.flag = 1                                #Flag if people are more than 5
+    def __init__(self,no_play):
+        self.past_keypoints_cam1 = {}
+        self.curr_keypoints_cam1 = {}
+        self.past_keypoints_cam2 = {}
+        self.curr_keypoints_cam2 = {}
+        self.sort_curr_keypts_cam1={}
+        self.sort_curr_keypts_cam2={}
+        self.sort_prev_keypts_cam1={}
+        self.sort_prev_keypts_cam2={}
+        self.no_play = no_play
+        self.flag = 1                                #Flag if people are more than 
         self.er = 0.003
-        self.begin = True
+        self.begin1 = True
+        self.begin2 = True
+        self.imp1 = []
+        self.imp2 = []
+        
 
     def change_keypoints(self,keypoints1,keypoints2):
-        if(not self.begin):
-           self.past_keypoints_cam1 = self.curr_keypoints_cam1
-           self.curr_keypoints_cam1 = keypoints1
-           self.past_keypoints_cam2 = self.curr_keypoints_cam2
-           self.curr_keypoints_cam2 = keypoints2
-        else:
-            self.curr_keypoints_cam1 = keypoints1
-            self.curr_keypoints_cam2 = keypoints2
-            self.past_keypoints_cam1 = keypoints1
-            self.past_keypoints_cam2 = keypoints2
-
-        keyps1 = self.curr_keypoints_cam1.keys()
-        keyps2 = self.curr_keypoints_cam2.keys()
-    
-        if(min(len(self.curr_keypoints_cam1),len(self.curr_keypoints_cam2)) >= 5):
-            assert(0),"Greater than 5 players detected"
-            self.flag=0
-        
-        self.curr_keypoints_cam2[keyps2[0]], self.curr_keypoints_cam2[keyps2[4]] = self.curr_keypoints_cam2[keyps2[4]], self.curr_keypoints_cam2[keyps2[0]]
-        self.curr_keypoints_cam2[keyps2[1]], self.curr_keypoints_cam2[keyps2[3]] = self.curr_keypoints_cam2[keyps2[3]], self.curr_keypoints_cam2[keyps2[1]]
-    
-        self.past_keypoints_cam2[keyps2[0]], self.past_keypoints_cam2[keyps2[4]] = self.past_keypoints_cam2[keyps2[4]], self.past_keypoints_cam2[keyps2[0]]
-        self.past_keypoints_cam2[keyps2[1]], self.past_keypoints_cam2[keyps2[3]] = self.past_keypoints_cam2[keyps2[3]], self.past_keypoints_cam2[keyps2[1]]    
-
-    def error_fn(self):
-        error =[]
-        if len(self.curr_keypoints_cam1)<len(self.curr_keypoints_cam2):
-            dict_of_key=self.curr_keypoints_cam1
-        else:
-            dict_of_key=self.curr_keypoints_cam2
-        for j,key in enumerate(dict_of_key): #Iterating through all the players
-            past_arr1 = np.array(self.past_keypoints_cam1[key])
-            curr_arr1 = np.array(self.curr_keypoints_cam1[key])
-
-            past_arr2 = np.array(self.past_keypoints_cam2[key])
-            curr_arr2 = np.array(self.curr_keypoints_cam2[key])
-            
-            x_prev1 = past_arr1[:,0]
-            y_prev1 = past_arr1[:,1]
-            x_curr1 = curr_arr1[:,0]
-            y_curr1 = curr_arr1[:,1]
-            conf_curr1 = curr_arr1[:,3]
-
-            x_prev2 = past_arr2[:,0]
-            y_prev2 = past_arr2[:,1]
-            x_curr2 = curr_arr2[:,0]
-            y_curr2 = curr_arr2[:,1]
-            conf_curr2 = curr_arr2[:,3]
-
-            if(np.mean(conf_curr1)>np.mean(conf_curr2)):    
-                p_prev = np.concatenate((x_prev1,y_prev1))
-                p_curr = np.concatenate((x_curr1,y_curr1))
+        if(self.begin1 and self.begin2):
+            if(len(list(keypoints1.keys())) == self.no_play):
+                self.curr_keypoints_cam1 = keypoints1
+                self.past_keypoints_cam1 = keypoints1
+                self.imp1=list(self.curr_keypoints_cam1.keys())
+                self.sort_curr_keypts_cam1=dict([(i,self.curr_keypoints_cam1[self.imp1[i]]) for i in range(len(self.curr_keypoints_cam1))])
+                self.sort_prev_keypts_cam1=self.sort_curr_keypts_cam1.copy()
+                self.begin1=False
             else:
-                p_prev = np.concatenate((x_prev2,y_prev2))
-                p_curr = np.concatenate((x_curr2,y_curr2))
-            
-            p1 = np.sum(p_prev - np.mean(p_prev))/np.std(p_prev)
-            p2 = np.sum(p_curr - np.mean(p_curr))/np.std(p_curr)
+                self.begin1 = True
+            if(len(list(keypoints2.keys())) == self.no_play):
+                
+                #keypoints2 are reversed
 
-            error.append(np.mean(np.square(np.subtract(p1,p2))))
-            print(j," : ",error[j])
-            if(error[j]>self.er):
-                self.l[j]=0
+                mapping=list(keypoints2.keys())
+                for i in range(int(len(mapping)/2)):
+                    temp=keypoints2[mapping[i]]
+                    keypoints2[mapping[i]]=keypoints2[mapping[len(mapping)-i-1]]
+                    keypoints2[mapping[len(mapping)-i-1]]=temp
+
+                self.curr_keypoints_cam2 = keypoints2
+                self.past_keypoints_cam2 = keypoints2
+                self.imp2=list(self.curr_keypoints_cam2.keys())
+                self.sort_curr_keypts_cam2=dict([(i,self.curr_keypoints_cam2[self.imp2[i]]) for i in range(len(self.curr_keypoints_cam2))])
+                self.sort_prev_keypts_cam2=self.sort_curr_keypts_cam2.copy()
+                self.begin2=False
+            else:
+                self.begin2 = True
+
+        #game began
+        else:
+            if(len(keypoints1) > self.no_play or len(keypoints2) > self.no_play):
+                assert(0),'Greater than'+str(self.no_play)+ 'detected'
+            
+            # if(len(keypoints1)<self.no_play -1):
+            #     assert(0),"Front Camera less than 3"
+
+            #reversing keypoints2
+            mapping=list(keypoints2.keys())
+            for i in range(int(len(mapping)/2)):
+                temp=keypoints2[mapping[i]]
+                keypoints2[mapping[i]]=keypoints2[mapping[len(mapping)-i-1]]
+                keypoints2[mapping[len(mapping)-i-1]]=temp
+
+            
+
+            self.past_keypoints_cam1 = self.curr_keypoints_cam1
+            self.curr_keypoints_cam1 = keypoints1
+            self.sort_prev_keypts_cam1=self.sort_curr_keypts_cam1
+
+            self.past_keypoints_cam2 = self.curr_keypoints_cam2
+            self.curr_keypoints_cam2 = keypoints2
+            self.sort_prev_keypts_cam2=self.sort_curr_keypts_cam2
+            
+
+            keyps1 = list(self.curr_keypoints_cam1.keys())
+            keyps2 = list(self.curr_keypoints_cam2.keys())
+            past_keyps1 = list(self.past_keypoints_cam1.keys())
+            past_keyps2 = list(self.past_keypoints_cam2.keys())
+
+            if(len(self.curr_keypoints_cam1)<self.no_play):
+                missing_in_cam1=list(set(self.imp1)-set(self.curr_keypoints_cam1))
+
+                if(len(missing_in_cam1)==1):
+                    self.curr_keypoints_cam1[missing_in_cam1[0]]=self.past_keypoints_cam1[missing_in_cam1[0]]
+                elif len(missing_in_cam1)>1:
+                    assert(0),">=2 ids changed at a single time in camera 1"
+                
+            if(len(self.curr_keypoints_cam2)<self.no_play):
+                missing_in_cam2=list(set(self.imp2)-set(self.curr_keypoints_cam2))
+                
+                if(len(missing_in_cam2)==1):
+                    self.curr_keypoints_cam2[missing_in_cam2[0]]=self.past_keypoints_cam2[missing_in_cam2[0]]
+                elif len(missing_in_cam2)>1:
+                    assert(0),">= 2 ids changed at a single time in camera 2"
+
+            if(len(self.curr_keypoints_cam1)==self.no_play):
+                if(set(self.imp1)!=set(self.curr_keypoints_cam1.keys())):
+                    
+                    added_in_cam1=list(set(self.curr_keypoints_cam1)-set(self.imp1))
+                    missing_in_cam1=list(set(self.imp1)-set(self.curr_keypoints_cam1))
+                    print(added_in_cam1)
+                    print(missing_in_cam1)
+                    if(len(added_in_cam1) !=1 and len(missing_in_cam1)!=1):
+                        assert(0),"no of people added and missing are not equal and greater than 1 in camera 1"
+
+                    index_of_missing=self.imp1.index(missing_in_cam1[0])
+                    self.imp1[index_of_missing]=added_in_cam1[0]
+
+            if(len(self.curr_keypoints_cam2)==self.no_play):
+                if(set(self.imp2)!=set(self.curr_keypoints_cam2.keys())):
+                    added_in_cam2=list(set(self.curr_keypoints_cam2)-set(self.imp2))
+                    missing_in_cam2=list(set(self.imp2)-set(self.curr_keypoints_cam2))
+
+                    if(len(added_in_cam2) !=1 and len(missing_in_cam2)!=1):
+                        assert(0),"no of people added and missing are not equal and greater than 1 in camera 2"
+
+                    index_of_missing=self.imp2.index(missing_in_cam2[0])
+                    self.imp2[index_of_missing]=added_in_cam2[0]
+
+            self.sort_curr_keypts_cam1=dict([(i,self.curr_keypoints_cam1[self.imp1[i]]) for i in range(len(self.curr_keypoints_cam1))])
+
+            self.sort_curr_keypts_cam2=dict([(i,self.curr_keypoints_cam2[self.imp2[i]]) for i in range(len(self.curr_keypoints_cam2))])
+
+
+                    
