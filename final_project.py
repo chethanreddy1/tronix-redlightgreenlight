@@ -226,7 +226,9 @@ class Video:
         self.dead1=cv2.imread(self.IMAGE_FOLDER_PATH+'\\DEAD'+str(1)+'.png')
         self.dead2=cv2.imread(self.IMAGE_FOLDER_PATH+'\\DEAD'+str(2)+'.png')
         self.dead3=cv2.imread(self.IMAGE_FOLDER_PATH+'\\DEAD'+str(3)+'.png')
-        self.list_of_photos_dead=[self.dead1,self.dead2,self.dead3]
+        self.dead4=cv2.imread(self.IMAGE_FOLDER_PATH+'\\DEAD'+str(4)+'.png')
+        self.dead5=cv2.imread(self.IMAGE_FOLDER_PATH+'\\DEAD'+str(5)+'.png')
+        self.list_of_photos_dead=[self.dead1,self.dead2,self.dead3,self.dead4,self.dead5]
         self.doll_situation='b'
 
         #creating list of frames of doll video
@@ -294,7 +296,7 @@ class Video:
         print(len(keypoints))
         for id,person_keypoints in keypoints.items():
             # the vertices of the polygon is stored in points
-            list1=[3,1,2,4,7,9,11,13,16,18,17,15,12,10,8,6]
+            list1=[0,5,4,3,15,14,13,9,12,11,10,2,1]
             points=[person_keypoints[i] for i in list1]
             points=np.array(points)
             # points=np.int32(points)  #converting points(type=list) to np.array of int32
@@ -361,14 +363,14 @@ def model_thread(people_obj):
     i=0
     numpyfile=np.load("C:\\Users\\sujal\\Desktop\\NITK\\RedLight_GreenLight\\upfront2666.npy",allow_pickle=True)
     while i<len(numpyfile):
-        print(len(numpyfile[i]))
+        t=time.time()
         people_obj.change_keypoints(numpyfile[i],numpyfile[i])
-        print(len(people_obj.sort_curr_keypts_cam1))
-        time.sleep(1)
+        time.sleep(1/100)
+        i+=1
 
 def error_fn_thread(people_obj,vid_obj):
     while True:
-        if(vid_obj.doll_situation=='f'):
+        if(vid_obj.doll_situation=='b'):
             people_obj.eliminate(0.1)
 
 
@@ -413,7 +415,7 @@ if __name__=="__main__":
     print(len(keypoints_loaded[500]))
     t1=threading.Thread(target=front_thread,args=(vid_obj,))
     t2=threading.Thread(target=display_thread,args=(vid_obj,people_obj))
-    t3=threading.Thread(target=model_thread,args=(people_obj,keypoints_loaded))
+    t3=threading.Thread(target=model_thread,args=(people_obj,))
     t4=threading.Thread(target=error_fn_thread,args=(people_obj,vid_obj))
     t1.start()
     t2.start()
