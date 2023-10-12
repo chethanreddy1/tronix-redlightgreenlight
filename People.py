@@ -122,5 +122,14 @@ class People:
 
             self.sort_curr_keypts_cam2=dict([(i,self.curr_keypoints_cam2[self.imp2[i]]) for i in range(len(self.curr_keypoints_cam2))])
 
+            list_of_keys_cam1=list(self.sort_curr_keypts_cam1.values())
+            list_of_keys_cam1.sort(key=lambda x:np.mean(x[:,1:2]))
+
+            self.sort_curr_keypts_cam1=dict([(i,list_of_keys_cam1[i]) for i in range(len(list_of_keys_cam1))])
+
+            list_of_keys_cam2=list(self.sort_curr_keypts_cam2.values())
+            list_of_keys_cam2.sort(key=lambda x:np.mean(x[:,1:2]),reverse=True)
+
+            self.sort_curr_keypts_cam2=dict([(i,list_of_keys_cam2[i]) for i in range(len(list_of_keys_cam2))])
 
                     
