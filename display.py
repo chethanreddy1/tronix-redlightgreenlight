@@ -103,6 +103,7 @@ class Video:
         self.dead2=cv2.imread(self.IMAGE_FOLDER_PATH+'\\DEAD'+str(2)+'.png')
         self.dead3=cv2.imread(self.IMAGE_FOLDER_PATH+'\\DEAD'+str(3)+'.png')
         self.list_of_photos_dead=[self.dead1,self.dead2,self.dead3]
+        self.doll_situation='b'
 
         #creating list of frames of doll video
         cap=cv2.VideoCapture(self.DOLL_VIDEO_PATH)
@@ -123,6 +124,8 @@ class Video:
         if(self.prev_mode!=self.mode):
             self.count_frames_of_doll=len(self.list_of_frames_backward)-self.count_frames_of_doll-1
             self.prev_mode=self.mode
+            if(self.mode=='g'):
+                self.doll_situation='b'
         if(self.mode=='g'):
             display_list=self.list_of_frames_backward
 
@@ -132,6 +135,12 @@ class Video:
         self.display_frame[360:,1280:,:]=display_list[self.count_frames_of_doll]
         if self.count_frames_of_doll <= (len(display_list)-41):         
             self.count_frames_of_doll+=40
+        else:
+            if(self.mode=='r'):
+                self.doll_situation='f'
+            
+        
+
 
         return
     
@@ -201,7 +210,6 @@ class Video:
 
     def change_back_frame(self,frame):
         self.frame_b=frame
-
 
 
 
