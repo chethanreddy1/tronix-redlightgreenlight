@@ -8,6 +8,7 @@ class People:
         self.sort_curr_keypts_cam2={}
         self.sort_prev_keypts_cam1={}
         self.sort_prev_keypts_cam2={}
+        self.playerstatus=[1]*no_play
         self.no_play = no_play
         self.flag = 1                                #Flag if people are more than 
         self.er = 0.003
@@ -15,6 +16,7 @@ class People:
         self.begin2 = True
         self.imp1 = []
         self.imp2 = []
+        self.s=[]
         
 
     def change_keypoints(self,keypoints1,keypoints2):
@@ -131,5 +133,61 @@ class People:
             list_of_keys_cam2.sort(key=lambda x:np.mean(x[:,1:2]),reverse=True)
 
             self.sort_curr_keypts_cam2=dict([(i,list_of_keys_cam2[i]) for i in range(len(list_of_keys_cam2))])
+    
+    def eliminate(self,th):
+
+        if len(self.sort_curr_keypts_cam1)==5 and len(self.sort_curr_keypts_cam2)==5 and len(self.sort_prev_keypts_cam1)==5 and len(self.sort_prev_keypts_cam2)==5:
+            def calculate_cosine_similarity(dictpr1,dictpr2, dictpa1,dictpa2,confidence_threshold=0.6):
+                sim=[]
+                for person_id in dictpa1:
+                    if (np.sum(self.sort_curr_keypts_cam1[person_id][:,2])>=np.sum(self.sort_curr_keypts_cam2[person_id][:,2])):
+                        dict1=dictpa1
+                        dict2=dictpr1
+                        
+                    else:
+                        dict1=dictpa2
+                        dict2=dictpr2
+
+                    pose1 = dict1[person_id]
+                    pose2 = dict2[person_id]
+
+                    if pose1.shape != pose2.shape:
+                        return None 
 
                     
+                    coords1 = pose1[:, :2] 
+                    coords2 = pose2[:, :2] 
+
+                    confidence1 = pose1[:, 2]
+                    confidence2 = pose2[:, 2]
+
+                    # Check if both keypoints have confidence > confidence_threshold
+                    valid_keypoints = (confidence1 > confidence_threshold) & (confidence2 > confidence_threshold)
+
+                    if not np.any(valid_keypoints):
+                        # If no valid keypoints, similarity is 1
+                        sim.append(1.0)
+                    else:
+                        # Extract and normalize only the valid keypoints
+                        normalized_coords1 = (coords1[valid_keypoints] - np.min(coords1[valid_keypoints], axis=0)) / (np.max(coords1[valid_keypoints], axis=0) - np.min(coords1[valid_keypoints], axis=0))
+                        normalized_coords2 = (coords2[valid_keypoints] - np.min(coords1[valid_keypoints], axis=0)) / (np.max(coords1[valid_keypoints], axis=0) - np.min(coords1[valid_keypoints], axis=0))
+
+                        # Calculate the cosine similarity between the normalized coordinate arrays
+                        dot_product = np.sum(normalized_coords1 * normalized_coords2)
+                        norm_coords1 = np.linalg.norm(normalized_coords1)
+                        norm_coords2 = np.linalg.norm(normalized_coords2)
+
+                        similarity = dot_product / (norm_coords1 * norm_coords2)
+
+                        sim.append(1 - similarity)
+                return [100.0 if s == 1 else s * 100 for s in sim]
+        
+            self.s=calculate_cosine_similarity(      self.sort_curr_keypts_cam1,
+                                                self.sort_curr_keypts_cam2,
+                                                self.sort_prev_keypts_cam1,
+                                                self.sort_prev_keypts_cam2,)
+            
+            # new= ((np.array(s)<th)*1)*(np.array(self.playerstatus))
+            new= ((np.array(self.s)<th)*1)
+            self.playerstatus=list(new)
+    
